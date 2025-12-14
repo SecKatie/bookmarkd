@@ -1,44 +1,64 @@
 package web
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/seckatie/bookmarkd/internal/core"
 	"github.com/seckatie/bookmarkd/internal/core/db"
 )
 
-func (ws *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+// renderTemplate renders a template with the standard HTML content-type header.
+// If template execution fails, it logs the error and returns a 500 response.
+func (ws *Server) renderTemplate(w http.ResponseWriter, templateName string, data any) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := ws.templates.ExecuteTemplate(w, templateName, data); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Failed to execute %s template: %v", templateName, err)
+	}
+}
+
+// requireMethod checks if the request method matches the expected method.
+// Returns true if the method matches, false otherwise (and sends 405 response).
+func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
+	if r.Method != method {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return false
+	}
+	return true
+}
+
+// parseIDFromPath extracts an int64 ID from a URL path segment.
+// For path "/bookmarks/123/archive", prefix "/bookmarks/", returns 123.
+func parseIDFromPath(path, prefix string) (int64, error) {
+	trimmed := strings.TrimPrefix(path, prefix)
+	parts := strings.Split(trimmed, "/")
+	if len(parts) == 0 || parts[0] == "" {
+		return 0, errors.New("missing ID in path")
+	}
+	return strconv.ParseInt(parts[0], 10, 64)
+}
+
+func (ws *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	data := map[string]any{"ActivePage": "bookmarks"}
-	if err := ws.templates.ExecuteTemplate(w, "index.html", data); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Printf("Failed to execute index template: %v", err)
-	}
+	ws.renderTemplate(w, "index.html", map[string]any{"ActivePage": "bookmarks"})
 }
 
 func (ws *Server) handleBookmarklet(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	data := map[string]any{"ActivePage": "bookmarklet"}
-	if err := ws.templates.ExecuteTemplate(w, "bookmarklet.html", data); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Printf("Failed to execute bookmarklet template: %v", err)
-	}
+	ws.renderTemplate(w, "bookmarklet.html", map[string]any{"ActivePage": "bookmarklet"})
 }
 
 func (ws *Server) handleBookmarkletAdd(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
 
@@ -54,15 +74,10 @@ func (ws *Server) handleBookmarkletAdd(w http.ResponseWriter, r *http.Request) {
 		title = url // Fallback to URL if title is empty
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := ws.templates.ExecuteTemplate(w, "bookmarklet_add.html", map[string]string{
+	ws.renderTemplate(w, "bookmarklet_add.html", map[string]string{
 		"URL":   url,
 		"Title": title,
-	}); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		log.Printf("Failed to execute bookmarklet add template: %v", err)
-		return
-	}
+	})
 }
 
 func (ws *Server) handleBookmarks(w http.ResponseWriter, r *http.Request) {
@@ -170,7 +185,7 @@ func (ws *Server) viewArchive(w http.ResponseWriter, _ *http.Request, id int64) 
 	}
 
 	archive, err := ws.db.GetBookmarkArchive(id)
-	if err != nil || archive.ArchiveStatus != "ok" {
+	if err != nil || archive.ArchiveStatus != core.ArchiveStatusOK {
 		http.Error(w, "Archive not available", http.StatusNotFound)
 		return
 	}
@@ -199,7 +214,7 @@ func (ws *Server) serveArchiveHTML(w http.ResponseWriter, _ *http.Request, id in
 		return
 	}
 
-	if archive.ArchiveStatus != "ok" || archive.ArchivedHTML == "" {
+	if archive.ArchiveStatus != core.ArchiveStatusOK || archive.ArchivedHTML == "" {
 		http.Error(w, "Archive not available", http.StatusNotFound)
 		return
 	}
@@ -239,7 +254,7 @@ func (ws *Server) buildArchiveManagerView(b db.Bookmark) archiveManagerView {
 		view.ArchiveError = archive.ArchiveError
 		// IsArchiving is true when there's no archived_at (queued/in-progress)
 		// but not when it's an error state
-		view.IsArchiving = archive.ArchivedAt == "" && archive.ArchiveStatus != "error"
+		view.IsArchiving = archive.ArchivedAt == "" && archive.ArchiveStatus != core.ArchiveStatusError
 	} else {
 		// If we can't get archive info, assume it needs archiving
 		view.IsArchiving = true

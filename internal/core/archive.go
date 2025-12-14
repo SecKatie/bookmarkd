@@ -76,7 +76,7 @@ func ArchiveBookmark(ctx context.Context, url string, opts ArchiveOptions) (Arch
 	log.Printf("Archiving bookmark %s", url)
 	log.Printf("Opts: %+v", opts)
 	if opts.Timeout <= 0 {
-		opts.Timeout = 35 * time.Second
+		opts.Timeout = DefaultArchiveTimeout
 	}
 
 	allocatorOpts := append([]chromedp.ExecAllocatorOption{}, chromedp.DefaultExecAllocatorOptions[:]...)
@@ -151,7 +151,7 @@ func ArchiveBookmark(ctx context.Context, url string, opts ArchiveOptions) (Arch
 	}
 	// Small delay to allow any final JS execution after network idle
 	actions = append(actions,
-		chromedp.Sleep(500*time.Millisecond),
+		chromedp.Sleep(DefaultNetworkIdleDelay),
 		chromedp.Location(&finalURL),
 		chromedp.Title(&title),
 		chromedp.OuterHTML("html", &html, chromedp.ByQuery),
@@ -192,7 +192,7 @@ func ArchiveAndPersist(ctx context.Context, database *db.DB, b db.Bookmark, opts
 
 	res, err := ArchiveBookmark(ctx, b.URL, opts)
 	if err != nil {
-		saveErr := database.SaveArchiveResult(b.ID, attemptedAt, nil, "error", err.Error(), "", "")
+		saveErr := database.SaveArchiveResult(b.ID, attemptedAt, nil, ArchiveStatusError, err.Error(), "", "")
 		if saveErr != nil {
 			return fmt.Errorf("archive failed (%v) and saving failure failed (%v)", err, saveErr)
 		}
@@ -209,7 +209,7 @@ func ArchiveAndPersist(ctx context.Context, database *db.DB, b db.Bookmark, opts
 	}
 
 	archivedAt := time.Now()
-	if err := database.SaveArchiveResult(b.ID, attemptedAt, &archivedAt, "ok", "", res.FinalURL, inlinedHTML); err != nil {
+	if err := database.SaveArchiveResult(b.ID, attemptedAt, &archivedAt, ArchiveStatusOK, "", res.FinalURL, inlinedHTML); err != nil {
 		return err
 	}
 

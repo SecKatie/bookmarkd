@@ -41,15 +41,23 @@ to quickly create a Cobra application.`,
 		// Create the work queue for the archive workers
 		workQueue := make(chan db.Bookmark, numWorkers*10) // Buffer for multiple bookmarks
 
+		// queueBookmark attempts to queue a bookmark for archiving.
+		// It tries for up to 5 seconds before giving up. The bookmark will be
+		// automatically retried on next startup since it remains unarchived in the DB.
+		queueBookmark := func(bookmark db.Bookmark, reason string) {
+			select {
+			case workQueue <- bookmark:
+				log.Printf("Queued bookmark %d (%s) for %s", bookmark.ID, bookmark.URL, reason)
+			case <-time.After(5 * time.Second):
+				log.Printf("Warning: work queue full after 5s, bookmark %d (%s) not queued for %s - will be retried on next startup",
+					bookmark.ID, bookmark.URL, reason)
+			}
+		}
+
 		// Register event listeners to queue bookmarks for archiving
 		database.RegisterEventListener(db.OnBookmarkCreatedEvent, func(event db.Event) error {
 			ev := event.(db.BookmarkCreatedEvent)
-			log.Printf("New bookmark created: %d - %s, queuing for archive", ev.Bookmark.ID, ev.Bookmark.URL)
-			select {
-			case workQueue <- ev.Bookmark:
-			default:
-				log.Printf("Warning: work queue full, bookmark %d will be picked up later", ev.Bookmark.ID)
-			}
+			queueBookmark(ev.Bookmark, "archiving (new)")
 			return nil
 		})
 
@@ -62,11 +70,7 @@ to quickly create a Cobra application.`,
 				log.Printf("Error fetching bookmark %d for re-archiving: %v", ev.BookmarkID, err)
 				return err
 			}
-			select {
-			case workQueue <- bookmark:
-			default:
-				log.Printf("Warning: work queue full, bookmark %d will be retried later", ev.BookmarkID)
-			}
+			queueBookmark(bookmark, "re-archiving")
 			return nil
 		})
 
@@ -97,19 +101,25 @@ to quickly create a Cobra application.`,
 			bookmarks, err := database.ListBookmarksToArchive(0)
 			if err != nil {
 				log.Printf("Error listing bookmarks to archive: %v", err)
-			} else if len(bookmarks) > 0 {
-				log.Printf("Found %d existing unarchived bookmarks", len(bookmarks))
-				for _, b := range bookmarks {
-					select {
-					case workQueue <- b:
-						log.Printf("Queued existing bookmark %d for archiving", b.ID)
-					default:
-						log.Printf("Warning: work queue full, bookmark %d will be retried on next startup", b.ID)
-					}
-				}
-			} else {
-				log.Println("No existing bookmarks need archiving")
+				return
 			}
+			if len(bookmarks) == 0 {
+				log.Println("No existing bookmarks need archiving")
+				return
+			}
+			log.Printf("Found %d existing unarchived bookmarks, queuing...", len(bookmarks))
+			queued := 0
+			for _, b := range bookmarks {
+				select {
+				case workQueue <- b:
+					queued++
+				case <-time.After(5 * time.Second):
+					log.Printf("Warning: work queue full, stopped queuing at %d/%d bookmarks - remaining will be retried on next startup",
+						queued, len(bookmarks))
+					return
+				}
+			}
+			log.Printf("Successfully queued all %d existing bookmarks for archiving", queued)
 		}()
 
 		// Get the host and port from the flags

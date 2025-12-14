@@ -4,8 +4,35 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 )
+
+// ErrInvalidURL is returned when a bookmark URL fails validation.
+var ErrInvalidURL = errors.New("invalid URL")
+
+// ValidateBookmarkURL validates that a URL is acceptable for bookmarking.
+// It requires the URL to have http or https scheme and a non-empty host.
+func ValidateBookmarkURL(urlStr string) error {
+	if urlStr == "" {
+		return fmt.Errorf("%w: empty URL", ErrInvalidURL)
+	}
+
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrInvalidURL, err)
+	}
+
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("%w: scheme must be http or https, got %q", ErrInvalidURL, u.Scheme)
+	}
+
+	if u.Host == "" {
+		return fmt.Errorf("%w: missing host", ErrInvalidURL)
+	}
+
+	return nil
+}
 
 // ------------------------------
 // Bookmark methods
@@ -26,9 +53,14 @@ func (db *DB) GetBookmark(id int64) (Bookmark, error) {
 
 // AddBookmark adds a new bookmark to the database and returns the ID of the new bookmark.
 //
+// It validates the URL before inserting and returns ErrInvalidURL if validation fails.
 // It returns the new bookmark ID (>0) on success.
 // Emits a BookmarkCreatedEvent after successful insert.
 func (db *DB) AddBookmark(url string, title string) (int64, error) {
+	if err := ValidateBookmarkURL(url); err != nil {
+		return 0, err
+	}
+
 	createdAt := time.Now().Format(time.RFC3339)
 	result, err := db.db.Exec(
 		"INSERT INTO bookmarks (url, title, created_at) VALUES (?, ?, ?)",

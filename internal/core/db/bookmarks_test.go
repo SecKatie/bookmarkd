@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -203,6 +204,106 @@ func TestDeleteBookmark(t *testing.T) {
 		}
 		if !strings.Contains(err.Error(), "not found") {
 			t.Errorf("expected 'not found' error, got %v", err)
+		}
+	})
+}
+
+// TestValidateBookmarkURL tests URL validation.
+func TestValidateBookmarkURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+		errMsg  string
+	}{
+		{"valid http URL", "http://example.com", false, ""},
+		{"valid https URL", "https://example.com", false, ""},
+		{"valid URL with path", "https://example.com/path/to/page", false, ""},
+		{"valid URL with query", "https://example.com?foo=bar", false, ""},
+		{"valid URL with port", "https://example.com:8080/path", false, ""},
+		{"empty URL", "", true, "empty URL"},
+		{"no scheme", "example.com", true, "scheme must be http or https"},
+		{"ftp scheme", "ftp://example.com", true, "scheme must be http or https"},
+		{"javascript scheme", "javascript:alert(1)", true, "scheme must be http or https"},
+		{"file scheme", "file:///etc/passwd", true, "scheme must be http or https"},
+		{"missing host", "https://", true, "missing host"},
+		{"data URI", "data:text/html,<h1>hi</h1>", true, "scheme must be http or https"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateBookmarkURL(tt.url)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if !errors.Is(err, ErrInvalidURL) {
+					t.Errorf("expected ErrInvalidURL, got %v", err)
+				}
+				if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
+					t.Errorf("error should contain %q, got %v", tt.errMsg, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// TestAddBookmarkValidation tests that AddBookmark validates URLs.
+func TestAddBookmarkValidation(t *testing.T) {
+	db := newTestDB(t)
+	defer db.Close()
+
+	t.Run("rejects invalid URL", func(t *testing.T) {
+		_, err := db.AddBookmark("not-a-url", "Invalid")
+		if err == nil {
+			t.Fatal("expected error for invalid URL, got nil")
+		}
+		if !errors.Is(err, ErrInvalidURL) {
+			t.Errorf("expected ErrInvalidURL, got %v", err)
+		}
+	})
+
+	t.Run("rejects ftp URL", func(t *testing.T) {
+		_, err := db.AddBookmark("ftp://example.com", "FTP Site")
+		if err == nil {
+			t.Fatal("expected error for ftp URL, got nil")
+		}
+		if !errors.Is(err, ErrInvalidURL) {
+			t.Errorf("expected ErrInvalidURL, got %v", err)
+		}
+	})
+
+	t.Run("rejects empty URL", func(t *testing.T) {
+		_, err := db.AddBookmark("", "No URL")
+		if err == nil {
+			t.Fatal("expected error for empty URL, got nil")
+		}
+		if !errors.Is(err, ErrInvalidURL) {
+			t.Errorf("expected ErrInvalidURL, got %v", err)
+		}
+	})
+
+	t.Run("accepts valid http URL", func(t *testing.T) {
+		id, err := db.AddBookmark("http://example.com", "HTTP Site")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if id <= 0 {
+			t.Errorf("expected positive ID, got %d", id)
+		}
+	})
+
+	t.Run("accepts valid https URL", func(t *testing.T) {
+		id, err := db.AddBookmark("https://example.com", "HTTPS Site")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if id <= 0 {
+			t.Errorf("expected positive ID, got %d", id)
 		}
 	})
 }

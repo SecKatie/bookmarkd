@@ -16,25 +16,9 @@ func (db *DB) QueueBookmarkForArchive(id int64) error {
 	return err
 }
 
-func (db *DB) ListBookmarksToArchive(limit int) ([]Bookmark, error) {
-	query := `
-		SELECT id, url, title, created_at
-		FROM bookmarks
-		WHERE archived_at IS NULL
-		ORDER BY created_at DESC
-	`
-	var rows *sql.Rows
-	var err error
-	if limit > 0 {
-		rows, err = db.db.Query(query+" LIMIT ?", limit)
-	} else {
-		rows, err = db.db.Query(query)
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to list bookmarks to archive: %w", err)
-	}
-	defer rows.Close()
-
+// scanBookmarks extracts Bookmark structs from SQL rows.
+// This is a helper to reduce duplication across bookmark query functions.
+func scanBookmarks(rows *sql.Rows) ([]Bookmark, error) {
 	var out []Bookmark
 	for rows.Next() {
 		var b Bookmark
@@ -43,7 +27,38 @@ func (db *DB) ListBookmarksToArchive(limit int) ([]Bookmark, error) {
 		}
 		out = append(out, b)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating bookmark rows: %w", err)
+	}
 	return out, nil
+}
+
+// queryBookmarks executes a bookmark query with optional limit and returns the results.
+// This is a helper to reduce duplication across list functions.
+func (db *DB) queryBookmarks(query string, args []any, limit int) ([]Bookmark, error) {
+	if limit > 0 {
+		query += " LIMIT ?"
+		args = append(args, limit)
+	}
+	rows, err := db.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanBookmarks(rows)
+}
+
+func (db *DB) ListBookmarksToArchive(limit int) ([]Bookmark, error) {
+	query := `
+		SELECT id, url, title, created_at
+		FROM bookmarks
+		WHERE archived_at IS NULL
+		ORDER BY created_at DESC`
+	bookmarks, err := db.queryBookmarks(query, nil, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list bookmarks to archive: %w", err)
+	}
+	return bookmarks, nil
 }
 
 func (db *DB) ListArchivedBookmarks(limit int) ([]Bookmark, error) {
@@ -51,29 +66,12 @@ func (db *DB) ListArchivedBookmarks(limit int) ([]Bookmark, error) {
 		SELECT id, url, title, created_at
 		FROM bookmarks
 		WHERE archived_at IS NOT NULL
-		ORDER BY archived_at DESC
-	`
-	var rows *sql.Rows
-	var err error
-	if limit > 0 {
-		rows, err = db.db.Query(query+" LIMIT ?", limit)
-	} else {
-		rows, err = db.db.Query(query)
-	}
+		ORDER BY archived_at DESC`
+	bookmarks, err := db.queryBookmarks(query, nil, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list archived bookmarks: %w", err)
 	}
-	defer rows.Close()
-
-	var out []Bookmark
-	for rows.Next() {
-		var b Bookmark
-		if err := rows.Scan(&b.ID, &b.URL, &b.Title, &b.CreatedAt); err != nil {
-			return nil, fmt.Errorf("failed to scan bookmark: %w", err)
-		}
-		out = append(out, b)
-	}
-	return out, nil
+	return bookmarks, nil
 }
 
 func (db *DB) ListBookmarksByArchiveStatus(status string, limit int) ([]Bookmark, error) {
@@ -81,29 +79,12 @@ func (db *DB) ListBookmarksByArchiveStatus(status string, limit int) ([]Bookmark
 		SELECT id, url, title, created_at
 		FROM bookmarks
 		WHERE archive_status = ?
-		ORDER BY archive_attempted_at DESC
-	`
-	var rows *sql.Rows
-	var err error
-	if limit > 0 {
-		rows, err = db.db.Query(query+" LIMIT ?", status, limit)
-	} else {
-		rows, err = db.db.Query(query, status)
-	}
+		ORDER BY archive_attempted_at DESC`
+	bookmarks, err := db.queryBookmarks(query, []any{status}, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list bookmarks by archive status: %w", err)
 	}
-	defer rows.Close()
-
-	var out []Bookmark
-	for rows.Next() {
-		var b Bookmark
-		if err := rows.Scan(&b.ID, &b.URL, &b.Title, &b.CreatedAt); err != nil {
-			return nil, fmt.Errorf("failed to scan bookmark: %w", err)
-		}
-		out = append(out, b)
-	}
-	return out, nil
+	return bookmarks, nil
 }
 
 func (db *DB) GetBookmarkArchive(id int64) (BookmarkArchive, error) {

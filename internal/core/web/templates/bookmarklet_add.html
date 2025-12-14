@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Adding Bookmark...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      max-width: 540px;
+      margin: 40px auto;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: #111925;
+      color: #f4f8fd;
+      line-height: 1.6;
+      padding: 24px;
+      text-align: center;
+    }
+    .spinner {
+      border: 3px solid rgba(138, 180, 255, 0.3);
+      border-top: 3px solid #8ab4ff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .success {
+      background: #0c1c11;
+      border: 2px solid #7ee787;
+      color: #7ee787;
+      padding: 16px;
+      border-radius: 6px;
+      margin: 20px 0;
+      display: none;
+    }
+    .error {
+      background: #2d1515;
+      border: 2px solid #ff6b6b;
+      color: #ff6b6b;
+      padding: 16px;
+      border-radius: 6px;
+      margin: 20px 0;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Adding bookmark...</h2>
+  <div class="spinner"></div>
+  <div id="status"></div>
+  
+  <form id="bookmark-form" method="POST" action="/bookmarks" style="display:none;">
+    <input type="hidden" name="url" value="{{ .URL }}">
+    <input type="hidden" name="title" value="{{ .Title }}">
+  </form>
+
+  <script>
+    (function() {
+      var form = document.getElementById('bookmark-form');
+      var status = document.getElementById('status');
+      
+      // Submit the form via fetch
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        credentials: 'same-origin'
+      })
+      .then(function(response) {
+        if (response.ok) {
+          status.innerHTML = '<div class="success">✓ Bookmark added successfully!<br>This window will close in 2 seconds.</div>';
+          document.querySelector('.spinner').style.display = 'none';
+          setTimeout(function() { window.close(); }, 2000);
+        } else {
+          throw new Error('Failed to add bookmark');
+        }
+      })
+      .catch(function(err) {
+        status.innerHTML = '<div class="error">✗ Failed to add bookmark.<br>Error: ' + err.message + '</div>';
+        document.querySelector('.spinner').style.display = 'none';
+      });
+    })();
+  </script>
+</body>
+</html>

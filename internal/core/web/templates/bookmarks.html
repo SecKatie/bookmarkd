@@ -1,0 +1,25 @@
+{{/* bookmarks.html: htmx fragment for listing bookmarks */}}
+{{ if .bookmarks }}
+    {{ range .bookmarks }}
+        <div class="bookmark-item">
+            <div class="bookmark-header">
+                <div class="bookmark-title">
+                    <a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Title }}</a>
+                </div>
+                <div class="bookmark-status">
+                    {{ if eq .ArchiveStatus "ok" }}
+                        <span class="status-dot status-ok" title="Archived {{ .ArchivedAt }}"></span>
+                        <a href="/bookmarks/{{ .ID }}/archive" class="archive-link">View Archive</a>
+                    {{ else if eq .ArchiveStatus "error" }}
+                        <span class="status-dot status-error" title="Archive failed"></span>
+                    {{ else }}
+                        <span class="status-dot status-pending" title="Not archived"></span>
+                    {{ end }}
+                </div>
+            </div>
+            <div class="bookmark-url">{{ .URL }}</div>
+        </div>
+    {{ end }}
+{{ else }}
+    <div class="empty">No bookmarks yet. Add your first one!</div>
+{{ end }}

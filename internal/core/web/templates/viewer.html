@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .Title }} - Archive Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg: #0b0f17;
+            --panel: rgba(255, 255, 255, 0.06);
+            --panel-2: rgba(255, 255, 255, 0.10);
+            --text: rgba(255, 255, 255, 0.92);
+            --muted: rgba(255, 255, 255, 0.70);
+            --border: rgba(255, 255, 255, 0.14);
+            --link: #8ab4ff;
+            --accent: #7ee787;
+        }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #f6f7fb;
+                --panel: rgba(0, 0, 0, 0.04);
+                --panel-2: rgba(0, 0, 0, 0.06);
+                --text: rgba(10, 18, 35, 0.92);
+                --muted: rgba(10, 18, 35, 0.68);
+                --border: rgba(10, 18, 35, 0.14);
+                --link: #1b66ff;
+                --accent: #137333;
+            }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+        }
+        .navbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 18px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--panel-2);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .back-btn:hover {
+            background: var(--panel);
+            text-decoration: none;
+        }
+        .bookmark-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .bookmark-info h1 {
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bookmark-info .original-url {
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bookmark-info .original-url a {
+            color: var(--link);
+            text-decoration: none;
+        }
+        .bookmark-info .original-url a:hover {
+            text-decoration: underline;
+        }
+        .viewer-frame {
+            flex: 1;
+            border: none;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="back-btn">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.78 12.53a.75.75 0 01-1.06 0L2.47 8.28a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 1.06L4.81 7h7.44a.75.75 0 010 1.5H4.81l2.97 2.97a.75.75 0 010 1.06z"/>
+            </svg>
+            Back
+        </a>
+        <div class="bookmark-info">
+            <h1>{{ .Title }}</h1>
+            <div class="original-url">
+                Original: <a href="{{ .URL }}" target="_blank" rel="noopener">{{ .URL }}</a>
+            </div>
+        </div>
+    </nav>
+    <iframe class="viewer-frame" src="{{ .RawURL }}" sandbox="allow-same-origin allow-scripts"></iframe>
+</body>
+</html>

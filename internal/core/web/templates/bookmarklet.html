@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bookmarklet - Add to bookmarkd</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      max-width: 540px;
+      margin: 40px auto;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: #111925;
+      color: #f4f8fd;
+      line-height: 1.6;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 24px rgba(0,0,0,0.18);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 2em;
+      color: #8ab4ff;
+    }
+    .bookmarklet-link {
+      display: inline-block;
+      font-size: 1.15em;
+      padding: 0.5em 1.10em;
+      background: #8ab4ff;
+      color: #152340;
+      text-decoration: none;
+      border-radius: 9px;
+      font-weight: 600;
+      margin: 1em 0;
+      transition: background 0.18s;
+      box-shadow: 0 2px 6px rgba(20, 80, 150, 0.07);
+      word-break: break-all;
+      cursor: pointer;
+    }
+    .bookmarklet-link:hover {
+      background: #7ee787;
+      color: #0c1c11;
+    }
+    code {
+      background: #222b3c;
+      color: #76d7c4;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 91%;
+    }
+    .instructions {
+      margin-top: 1.5em;
+      background: #161d2b;
+      padding: 1em 1.2em;
+      border-left: 7px solid #8ab4ff;
+      border-radius: 0 7px 7px 0;
+    }
+    a:visited { color: #8ab4ff; }
+  </style>
+</head>
+<body>
+  <h1>Add to bookmarkd: Bookmarklet</h1>
+  <p>
+    Drag the button below to your bookmarks bar.<br>
+    Then, click it on any site you want to save to <b>bookmarkd</b> — the title and URL will be auto-filled!
+  </p>
+  <a class="bookmarklet-link"
+     href="javascript:(function(){
+       var bookmarkdURL='http://localhost:8080';
+       var url=encodeURIComponent(window.location.href);
+       var title=encodeURIComponent(document.title);
+       var win=window.open(bookmarkdURL+'/bookmarklet/add?url='+url+'&title='+title,'_blank','width=600,height=400');
+       if(!win){alert('Please allow popups for this site');}
+     })();">
+    Add to bookmarkd
+  </a>
+
+  <div class="instructions">
+    <b>How to use:</b>
+    <ol>
+      <li>
+        Click and drag the <b>Add to bookmarkd</b> button above to your bookmarks bar. If you don't see the bookmarks bar, press <code>Ctrl+Shift+B</code> (Windows) or <code>Cmd+Shift+B</code> (Mac) to show it.
+      </li>
+      <li>
+        When you're on a web page you want to save, just click your new bookmarklet. It will open a small popup window that adds the bookmark to bookmarkd.
+      </li>
+      <li>
+        <b>Safari users:</b> If you get a popup blocked message, allow popups for the site you're bookmarking, then try again.
+      </li>
+    </ol>
+    <p>
+      <b>Note:</b> The bookmarklet is currently configured for <code>http://localhost:8080</code>. If your bookmarkd runs on a different port or domain, you'll need to edit the bookmarklet code after dragging it to your bookmarks bar.<br>
+      Right-click the bookmark → Edit → Update the URL in the bookmarklet code where it says <code>bookmarkdURL='http://localhost:8080'</code>
+    </p>
+  </div>
+</body>
+</html>

@@ -12,8 +12,8 @@
         </div>
         <div class="archive-actions">
             {{ if .IsArchiving }}
-                <span class="status-dot status-archiving" title="Archiving in progress..."></span>
-                <span class="archiving-text">Archiving...</span>
+                <span class="spinner spinner-sm" aria-hidden="true"></span>
+                <span class="archiving-text">Archiving…</span>
             {{ else if eq .ArchiveStatus "ok" }}
                 <span class="status-dot status-ok" title="Archived {{ .ArchivedAt }}"></span>
                 <a href="/bookmarks/{{ .ID }}/archive" class="view-link">View</a>
@@ -26,8 +26,11 @@
                     hx-post="/archives/{{ .ID }}/refetch"
                     hx-target="#archive-{{ .ID }}"
                     hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                    hx-indicator="find .btn-indicator"
                     {{ if .IsArchiving }}disabled{{ end }}
                     title="Clear archive and queue for re-archiving">
+                <span class="btn-indicator htmx-indicator spinner spinner-sm" aria-hidden="true"></span>
                 Refetch
             </button>
         </div>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>bookmarkd</title>
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+    <link rel="stylesheet" href="/static/app.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
@@ -204,6 +205,73 @@
             background: rgba(255,255,255,0.04);
         }
         .loading { color: var(--muted); text-align: center; padding: 14px; }
+
+        /* Loading indicator */
+        .htmx-indicator {
+            display: none;
+        }
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+        .htmx-request.htmx-indicator {
+            display: inline-block;
+        }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Button loading state */
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        button .spinner {
+            width: 14px;
+            height: 14px;
+            border-width: 2px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        /* List loading overlay */
+        .list-container {
+            position: relative;
+        }
+        .list-container.htmx-request::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--bg);
+            opacity: 0.5;
+            border-radius: 12px;
+        }
+
+        /* Refresh button */
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .refresh-btn:hover {
+            background: var(--panel);
+        }
+        .card-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         footer {
             margin-top: 18px;
             color: var(--muted);
@@ -223,10 +291,15 @@
                 <h1>bookmarkd</h1>
                 <p>A fast bookmark manager demo using HTMX + Go</p>
             </div>
-            <div class="pill">
-                <span>Listening on</span>
-                <span class="mono">/</span>
-                <span class="mono">bookmarks</span>
+            <div class="nav-links">
+                <a class="nav-link active" href="/">Bookmarks</a>
+                <a class="nav-link" href="/archives">Archives</a>
+                <a class="nav-link" href="/bookmarklet">Bookmarklet</a>
+                <span class="pill">
+                    <span>Listening on</span>
+                    <span class="mono">/</span>
+                    <span class="mono">bookmarks</span>
+                </span>
             </div>
         </header>
 
@@ -240,6 +313,8 @@
                           hx-post="/bookmarks"
                           hx-target="#bookmarks-list"
                           hx-swap="innerHTML"
+                          hx-disabled-elt="find button"
+                          hx-indicator="find .btn-indicator"
                           hx-on::after-request="if(event.detail.successful){ this.reset(); }">
                         <label>
                             URL
@@ -250,7 +325,10 @@
                             <input type="text" name="title" placeholder="Example title" required autocomplete="off">
                         </label>
                         <div class="actions">
-                            <button type="submit">Add</button>
+                            <button type="submit">
+                                <span class="btn-indicator htmx-indicator spinner"></span>
+                                Add
+                            </button>
                             <div class="hint">Tip: paste a URL first, then a short title.</div>
                         </div>
                     </form>
@@ -259,15 +337,29 @@
 
             <section class="card">
                 <div class="card-header">
-                    <h2>Your bookmarks</h2>
+                    <div class="card-header-row">
+                        <h2>Your bookmarks</h2>
+                        <button class="refresh-btn"
+                                hx-get="/bookmarks"
+                                hx-target="#bookmarks-list"
+                                hx-swap="innerHTML"
+                                hx-indicator=".list-indicator">
+                            <span class="list-indicator htmx-indicator spinner"></span>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="bookmarks-list"
-                         class="list"
+                         class="list list-container"
                          hx-get="/bookmarks"
-                         hx-trigger="load"
-                         hx-swap="innerHTML">
-                        <div class="loading">Loading…</div>
+                         hx-trigger="load, every 30s"
+                         hx-swap="innerHTML"
+                         hx-indicator=".list-indicator">
+                        <div class="loading">
+                            <div class="spinner" style="margin: 0 auto;"></div>
+                            <div style="margin-top: 8px;">Loading bookmarks...</div>
+                        </div>
                     </div>
                 </div>
             </section>

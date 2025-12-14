@@ -4,54 +4,91 @@
   <meta charset="UTF-8">
   <title>Adding Bookmark...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/static/app.css">
   <style>
+    :root {
+      --bg: #0b0f17;
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-2: rgba(255, 255, 255, 0.10);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.70);
+      --border: rgba(255, 255, 255, 0.14);
+      --link: #8ab4ff;
+      --accent: #7ee787;
+      --danger: #ff6b6b;
+      --shadow: 0 16px 48px rgba(0,0,0,0.35);
+      --radius: 14px;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f6f7fb;
+        --panel: rgba(0, 0, 0, 0.04);
+        --panel-2: rgba(0, 0, 0, 0.06);
+        --text: rgba(10, 18, 35, 0.92);
+        --muted: rgba(10, 18, 35, 0.68);
+        --border: rgba(10, 18, 35, 0.14);
+        --link: #1b66ff;
+        --accent: #137333;
+        --danger: #b42318;
+        --shadow: 0 16px 48px rgba(10,18,35,0.12);
+      }
+    }
+    * { box-sizing: border-box; }
     body {
-      max-width: 540px;
-      margin: 40px auto;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: #111925;
-      color: #f4f8fd;
-      line-height: 1.6;
-      padding: 24px;
+      margin: 0;
+      padding: 18px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background:
+        radial-gradient(900px 500px at 100% 0%, rgba(126,231,135,0.14), transparent 55%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .card {
+      max-width: 520px;
+      margin: 24px auto;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
       text-align: center;
     }
+    .card-body { padding: 18px; }
+    h2 { margin: 0 0 8px; font-size: 16px; }
+    .muted { color: var(--muted); font-size: 12px; }
     .spinner {
-      border: 3px solid rgba(138, 180, 255, 0.3);
-      border-top: 3px solid #8ab4ff;
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
+      animation: spin 0.8s linear infinite;
+      margin: 14px auto 10px;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .success, .error {
+      margin-top: 12px;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      font-size: 12px;
     }
-    .success {
-      background: #0c1c11;
-      border: 2px solid #7ee787;
-      color: #7ee787;
-      padding: 16px;
-      border-radius: 6px;
-      margin: 20px 0;
-      display: none;
-    }
-    .error {
-      background: #2d1515;
-      border: 2px solid #ff6b6b;
-      color: #ff6b6b;
-      padding: 16px;
-      border-radius: 6px;
-      margin: 20px 0;
-      display: none;
-    }
+    .success { border-color: rgba(126,231,135,0.35); }
+    .error { border-color: rgba(255,107,107,0.35); }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h2>Adding bookmark...</h2>
-  <div class="spinner"></div>
-  <div id="status"></div>
+  <div class="card">
+    <div class="card-body">
+      <h2>Adding bookmark…</h2>
+      <div class="spinner" aria-hidden="true"></div>
+      <div id="status" class="muted">One moment.</div>
+    </div>
+  </div>
   
   <form id="bookmark-form" method="POST" action="/bookmarks" style="display:none;">
     <input type="hidden" name="url" value="{{ .URL }}">
@@ -71,7 +108,7 @@
       })
       .then(function(response) {
         if (response.ok) {
-          status.innerHTML = '<div class="success">✓ Bookmark added successfully!<br>This window will close in 2 seconds.</div>';
+          status.innerHTML = '<div class="success"><b>Saved.</b> You can close this window.<div style="margin-top:6px;"><a href="/" target="_blank" rel="noopener">Open bookmarkd</a></div><div class="muted" style="margin-top:6px;">This window will try to close automatically.</div></div>';
           document.querySelector('.spinner').style.display = 'none';
           setTimeout(function() { window.close(); }, 2000);
         } else {
@@ -79,7 +116,7 @@
         }
       })
       .catch(function(err) {
-        status.innerHTML = '<div class="error">✗ Failed to add bookmark.<br>Error: ' + err.message + '</div>';
+        status.innerHTML = '<div class="error"><b>Could not save.</b><div class="muted" style="margin-top:6px;">' + err.message + '</div><div style="margin-top:10px;"><a href="/" target="_blank" rel="noopener">Open bookmarkd</a></div></div>';
         document.querySelector('.spinner').style.display = 'none';
       });
     })();

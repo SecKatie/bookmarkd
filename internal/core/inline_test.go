@@ -64,7 +64,9 @@ func TestFetchURL(t *testing.T) {
 			name: "successful fetch",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/plain")
-				w.Write([]byte("hello world"))
+				if _, err := w.Write([]byte("hello world")); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
 			},
 			wantData: "hello world",
 			wantType: "text/plain",
@@ -89,7 +91,9 @@ func TestFetchURL(t *testing.T) {
 			name: "content type detection",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				// PNG magic bytes
-				w.Write([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A})
+				if _, err := w.Write([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
 			},
 			wantType: "image/png",
 		},
@@ -97,7 +101,9 @@ func TestFetchURL(t *testing.T) {
 			name: "size limit",
 			handler: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "text/plain")
-				w.Write([]byte("12345678901234567890")) // 20 bytes
+				if _, err := w.Write([]byte("12345678901234567890")); err != nil { // 20 bytes
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
 			},
 			maxSize:  10,
 			wantData: "1234567890", // truncated to 10 bytes
@@ -110,7 +116,9 @@ func TestFetchURL(t *testing.T) {
 					http.Error(w, "wrong user agent", http.StatusBadRequest)
 					return
 				}
-				w.Write([]byte("ok"))
+				if _, err := w.Write([]byte("ok")); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
 			},
 			wantData: "ok",
 		},
@@ -152,7 +160,9 @@ func TestFetchURL(t *testing.T) {
 func TestFetchResource(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/css")
-		w.Write([]byte("body { color: red; }"))
+		if _, err := w.Write([]byte("body { color: red; }")); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}))
 	defer ts.Close()
 
@@ -199,7 +209,9 @@ func TestFetchAsDataURI(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", tt.contentType)
-				w.Write(tt.data)
+				if _, err := w.Write(tt.data); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
 			}))
 			defer ts.Close()
 
@@ -219,25 +231,30 @@ func TestFetchAsDataURI(t *testing.T) {
 func TestInlineResources(t *testing.T) {
 	// Set up test server that serves different resources
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
 		switch r.URL.Path {
 		case "/style.css":
 			w.Header().Set("Content-Type", "text/css")
-			w.Write([]byte("body { color: red; }"))
+			_, err = w.Write([]byte("body { color: red; }"))
 		case "/script.js":
 			w.Header().Set("Content-Type", "application/javascript")
-			w.Write([]byte("console.log('hello');"))
+			_, err = w.Write([]byte("console.log('hello');"))
 		case "/image.png":
 			w.Header().Set("Content-Type", "image/png")
 			// Minimal PNG
-			w.Write([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A})
+			_, err = w.Write([]byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A})
 		case "/css-with-url.css":
 			w.Header().Set("Content-Type", "text/css")
-			w.Write([]byte("body { background: url(/bg.png); }"))
+			_, err = w.Write([]byte("body { background: url(/bg.png); }"))
 		case "/bg.png":
 			w.Header().Set("Content-Type", "image/png")
-			w.Write([]byte{0x89, 0x50, 0x4E, 0x47})
+			_, err = w.Write([]byte{0x89, 0x50, 0x4E, 0x47})
 		default:
 			http.NotFound(w, r)
+			return
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}))
 	defer ts.Close()
@@ -398,7 +415,9 @@ func TestInlineResources(t *testing.T) {
 func TestInlineCSSURLs(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/png")
-		w.Write([]byte{0x89, 0x50, 0x4E, 0x47})
+		if _, err := w.Write([]byte{0x89, 0x50, 0x4E, 0x47}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}))
 	defer ts.Close()
 

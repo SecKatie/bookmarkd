@@ -27,7 +27,11 @@ func TestNewSQLiteDB(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		defer db.Close()
+		t.Cleanup(func() {
+			if err := db.Close(); err != nil {
+				t.Errorf("failed to close db: %v", err)
+			}
+		})
 
 		if db.db == nil {
 			t.Error("expected db.db to be non-nil")
@@ -42,14 +46,24 @@ func TestNewSQLiteDB(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create temp file: %v", err)
 		}
-		tmpFile.Close()
-		defer os.Remove(tmpFile.Name())
+		if err := tmpFile.Close(); err != nil {
+			t.Fatalf("failed to close temp file: %v", err)
+		}
+		t.Cleanup(func() {
+			if err := os.Remove(tmpFile.Name()); err != nil {
+				t.Errorf("failed to remove temp file: %v", err)
+			}
+		})
 
 		db, err := NewSQLiteDB(tmpFile.Name())
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		defer db.Close()
+		t.Cleanup(func() {
+			if err := db.Close(); err != nil {
+				t.Errorf("failed to close db: %v", err)
+			}
+		})
 
 		if db.db == nil {
 			t.Error("expected db.db to be non-nil")
@@ -64,7 +78,11 @@ func TestMigrate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create database: %v", err)
 		}
-		defer db.Close()
+		t.Cleanup(func() {
+			if err := db.Close(); err != nil {
+				t.Errorf("failed to close db: %v", err)
+			}
+		})
 
 		if err := db.Migrate(); err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -86,7 +104,11 @@ func TestMigrate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create database: %v", err)
 		}
-		defer db.Close()
+		t.Cleanup(func() {
+			if err := db.Close(); err != nil {
+				t.Errorf("failed to close db: %v", err)
+			}
+		})
 
 		// Run migrations twice
 		if err := db.Migrate(); err != nil {

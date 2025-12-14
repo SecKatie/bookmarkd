@@ -1,11 +1,8 @@
 package web
 
 import (
-	"errors"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
 )
 
 // renderTemplate renders a template with the standard HTML content-type header.
@@ -26,15 +23,4 @@ func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
 		return false
 	}
 	return true
-}
-
-// parseIDFromPath extracts an int64 ID from a URL path segment.
-// For path "/bookmarks/123/archive", prefix "/bookmarks/", returns 123.
-func parseIDFromPath(path, prefix string) (int64, error) {
-	trimmed := strings.TrimPrefix(path, prefix)
-	parts := strings.Split(trimmed, "/")
-	if len(parts) == 0 || parts[0] == "" {
-		return 0, errors.New("missing ID in path")
-	}
-	return strconv.ParseInt(parts[0], 10, 64)
 }

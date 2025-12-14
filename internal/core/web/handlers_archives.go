@@ -195,7 +195,7 @@ func (ws *Server) handleArchivesRoutes(w http.ResponseWriter, r *http.Request) {
 }
 
 // getArchiveItemStatus returns the current status of a single archive item
-func (ws *Server) getArchiveItemStatus(w http.ResponseWriter, r *http.Request, id int64) {
+func (ws *Server) getArchiveItemStatus(w http.ResponseWriter, _ *http.Request, id int64) {
 	bookmark, err := ws.db.GetBookmark(id)
 	if err != nil {
 		http.Error(w, "Bookmark not found", http.StatusNotFound)

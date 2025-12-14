@@ -70,7 +70,11 @@ func TestEventTypes(t *testing.T) {
 // TestRegisterEventListener tests listener registration.
 func TestRegisterEventListener(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	called := false
 	db.RegisterEventListener(OnBookmarkCreatedEvent, func(event Event) error {
@@ -78,7 +82,9 @@ func TestRegisterEventListener(t *testing.T) {
 		return nil
 	})
 
-	db.AddBookmark("https://example.com", "Test")
+	if _, err := db.AddBookmark("https://example.com", "Test"); err != nil {
+		t.Fatalf("failed to add bookmark: %v", err)
+	}
 
 	if !called {
 		t.Error("expected listener to be called")
@@ -88,7 +94,11 @@ func TestRegisterEventListener(t *testing.T) {
 // TestBookmarkCreatedEvent tests that event is emitted on bookmark creation.
 func TestBookmarkCreatedEvent(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	var receivedEvent BookmarkCreatedEvent
 	db.RegisterEventListener(OnBookmarkCreatedEvent, func(event Event) error {
@@ -112,7 +122,11 @@ func TestBookmarkCreatedEvent(t *testing.T) {
 // TestBookmarkUpdatedEvent tests that event is emitted on bookmark update.
 func TestBookmarkUpdatedEvent(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	id, _ := db.AddBookmark("https://old.com", "Old Title")
 
@@ -122,7 +136,9 @@ func TestBookmarkUpdatedEvent(t *testing.T) {
 		return nil
 	})
 
-	db.UpdateBookmark(id, "https://new.com", "New Title")
+	if err := db.UpdateBookmark(id, "https://new.com", "New Title"); err != nil {
+		t.Fatalf("failed to update bookmark: %v", err)
+	}
 
 	if receivedEvent.Bookmark.ID != id {
 		t.Errorf("expected bookmark ID %d, got %d", id, receivedEvent.Bookmark.ID)
@@ -135,7 +151,11 @@ func TestBookmarkUpdatedEvent(t *testing.T) {
 // TestBookmarkDeletedEvent tests that event is emitted on bookmark deletion.
 func TestBookmarkDeletedEvent(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	id, _ := db.AddBookmark("https://example.com", "To Delete")
 
@@ -145,7 +165,9 @@ func TestBookmarkDeletedEvent(t *testing.T) {
 		return nil
 	})
 
-	db.DeleteBookmark(id)
+	if err := db.DeleteBookmark(id); err != nil {
+		t.Fatalf("failed to delete bookmark: %v", err)
+	}
 
 	if receivedEvent.Bookmark.ID != id {
 		t.Errorf("expected bookmark ID %d, got %d", id, receivedEvent.Bookmark.ID)
@@ -155,7 +177,11 @@ func TestBookmarkDeletedEvent(t *testing.T) {
 // TestArchiveResultSavedEvent tests that event is emitted when archive result is saved.
 func TestArchiveResultSavedEvent(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	id, _ := db.AddBookmark("https://example.com", "Test")
 
@@ -166,7 +192,9 @@ func TestArchiveResultSavedEvent(t *testing.T) {
 	})
 
 	now := time.Now()
-	db.SaveArchiveResult(id, now, &now, "ok", "", "", "<html></html>")
+	if err := db.SaveArchiveResult(id, now, &now, "ok", "", "", "<html></html>"); err != nil {
+		t.Fatalf("failed to save archive result: %v", err)
+	}
 
 	if receivedEvent.BookmarkID != id {
 		t.Errorf("expected bookmark ID %d, got %d", id, receivedEvent.BookmarkID)
@@ -179,11 +207,20 @@ func TestArchiveResultSavedEvent(t *testing.T) {
 // TestArchiveClearedEvent tests that event is emitted when archive is cleared.
 func TestArchiveClearedEvent(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
-	id, _ := db.AddBookmark("https://example.com", "Test")
+	id, err := db.AddBookmark("https://example.com", "Test")
+	if err != nil {
+		t.Fatalf("failed to add bookmark: %v", err)
+	}
 	now := time.Now()
-	db.SaveArchiveResult(id, now, &now, "ok", "", "", "<html></html>")
+	if err := db.SaveArchiveResult(id, now, &now, "ok", "", "", "<html></html>"); err != nil {
+		t.Fatalf("failed to save archive result: %v", err)
+	}
 
 	var receivedEvent ArchiveClearedEvent
 	db.RegisterEventListener(OnArchiveClearedEvent, func(event Event) error {
@@ -191,7 +228,9 @@ func TestArchiveClearedEvent(t *testing.T) {
 		return nil
 	})
 
-	db.ClearBookmarkArchive(id)
+	if err := db.ClearBookmarkArchive(id); err != nil {
+		t.Fatalf("failed to clear bookmark archive: %v", err)
+	}
 
 	if receivedEvent.BookmarkID != id {
 		t.Errorf("expected bookmark ID %d, got %d", id, receivedEvent.BookmarkID)
@@ -201,7 +240,11 @@ func TestArchiveClearedEvent(t *testing.T) {
 // TestMultipleListeners tests that multiple listeners are called.
 func TestMultipleListeners(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	callCount := 0
 
@@ -214,7 +257,9 @@ func TestMultipleListeners(t *testing.T) {
 		return nil
 	})
 
-	db.AddBookmark("https://example.com", "Test")
+	if _, err := db.AddBookmark("https://example.com", "Test"); err != nil {
+		t.Fatalf("failed to add bookmark: %v", err)
+	}
 
 	if callCount != 2 {
 		t.Errorf("expected 2 listeners to be called, got %d", callCount)
@@ -224,7 +269,11 @@ func TestMultipleListeners(t *testing.T) {
 // TestListenerErrors tests that listener errors are handled gracefully.
 func TestListenerErrors(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	secondCalled := false
 
@@ -252,7 +301,11 @@ func TestListenerErrors(t *testing.T) {
 // TestListenersForDifferentEvents tests that listeners only receive their event type.
 func TestListenersForDifferentEvents(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	createdCalled := false
 	deletedCalled := false
@@ -267,7 +320,9 @@ func TestListenersForDifferentEvents(t *testing.T) {
 	})
 
 	// Only create a bookmark, don't delete
-	db.AddBookmark("https://example.com", "Test")
+	if _, err := db.AddBookmark("https://example.com", "Test"); err != nil {
+		t.Fatalf("failed to add bookmark: %v", err)
+	}
 
 	if !createdCalled {
 		t.Error("expected created listener to be called")

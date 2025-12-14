@@ -8,13 +8,6 @@ type bookmarkView struct {
 	ArchivedAt    string
 }
 
-type archiveView struct {
-	ID     int64
-	URL    string
-	Title  string
-	RawURL string // URL to fetch raw archived HTML
-}
-
 type archiveManagerView struct {
 	ID                 int64
 	URL                string

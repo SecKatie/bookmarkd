@@ -34,7 +34,11 @@ func newTestServer(t *testing.T) *Server {
 func TestNewServer(t *testing.T) {
 	t.Run("creates server successfully", func(t *testing.T) {
 		database := newTestDB(t)
-		defer database.Close()
+		t.Cleanup(func() {
+			if err := database.Close(); err != nil {
+				t.Errorf("failed to close database: %v", err)
+			}
+		})
 
 		server, err := newServer(database)
 		if err != nil {
@@ -54,7 +58,11 @@ func TestNewServer(t *testing.T) {
 
 	t.Run("loads all required templates", func(t *testing.T) {
 		database := newTestDB(t)
-		defer database.Close()
+		t.Cleanup(func() {
+			if err := database.Close(); err != nil {
+				t.Errorf("failed to close database: %v", err)
+			}
+		})
 
 		server, _ := newServer(database)
 

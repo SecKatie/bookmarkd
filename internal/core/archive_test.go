@@ -140,7 +140,11 @@ func TestRunArchive_SingleBookmark(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create test database: %v", err)
 	}
-	defer database.Close()
+	t.Cleanup(func() {
+		if err := database.Close(); err != nil {
+			t.Errorf("failed to close database: %v", err)
+		}
+	})
 
 	if err := database.Migrate(); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)
@@ -178,7 +182,11 @@ func TestRunArchive_BatchMode_NoBookmarks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create test database: %v", err)
 	}
-	defer database.Close()
+	t.Cleanup(func() {
+		if err := database.Close(); err != nil {
+			t.Errorf("failed to close database: %v", err)
+		}
+	})
 
 	if err := database.Migrate(); err != nil {
 		t.Fatalf("failed to migrate database: %v", err)

@@ -9,11 +9,19 @@ import (
 // TestListBookmarksToArchive tests listing bookmarks that need archiving.
 func TestListBookmarksToArchive(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("returns all unarchived bookmarks", func(t *testing.T) {
-		db.AddBookmark("https://site1.com", "Site 1")
-		db.AddBookmark("https://site2.com", "Site 2")
+		if _, err := db.AddBookmark("https://site1.com", "Site 1"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		if _, err := db.AddBookmark("https://site2.com", "Site 2"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		bookmarks, err := db.ListBookmarksToArchive(0)
 		if err != nil {
@@ -27,14 +35,25 @@ func TestListBookmarksToArchive(t *testing.T) {
 	t.Run("excludes archived bookmarks", func(t *testing.T) {
 		// Create a fresh database
 		db2 := newTestDB(t)
-		defer db2.Close()
+		t.Cleanup(func() {
+			if err := db2.Close(); err != nil {
+				t.Errorf("failed to close db2: %v", err)
+			}
+		})
 
-		id1, _ := db2.AddBookmark("https://archived.com", "Archived")
-		db2.AddBookmark("https://unarchived.com", "Unarchived")
+		id1, err := db2.AddBookmark("https://archived.com", "Archived")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		if _, err := db2.AddBookmark("https://unarchived.com", "Unarchived"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		// Archive the first one
 		now := time.Now()
-		db2.SaveArchiveResult(id1, now, &now, "ok", "", "https://archived.com", "<html></html>")
+		if err := db2.SaveArchiveResult(id1, now, &now, "ok", "", "https://archived.com", "<html></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		bookmarks, err := db2.ListBookmarksToArchive(0)
 		if err != nil {
@@ -50,11 +69,21 @@ func TestListBookmarksToArchive(t *testing.T) {
 
 	t.Run("respects limit", func(t *testing.T) {
 		db3 := newTestDB(t)
-		defer db3.Close()
+		t.Cleanup(func() {
+			if err := db3.Close(); err != nil {
+				t.Errorf("failed to close db3: %v", err)
+			}
+		})
 
-		db3.AddBookmark("https://site1.com", "Site 1")
-		db3.AddBookmark("https://site2.com", "Site 2")
-		db3.AddBookmark("https://site3.com", "Site 3")
+		if _, err := db3.AddBookmark("https://site1.com", "Site 1"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		if _, err := db3.AddBookmark("https://site2.com", "Site 2"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		if _, err := db3.AddBookmark("https://site3.com", "Site 3"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		bookmarks, err := db3.ListBookmarksToArchive(2)
 		if err != nil {
@@ -69,14 +98,25 @@ func TestListBookmarksToArchive(t *testing.T) {
 // TestListArchivedBookmarks tests listing successfully archived bookmarks.
 func TestListArchivedBookmarks(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("returns only archived bookmarks", func(t *testing.T) {
-		id1, _ := db.AddBookmark("https://archived.com", "Archived")
-		db.AddBookmark("https://unarchived.com", "Unarchived")
+		id1, err := db.AddBookmark("https://archived.com", "Archived")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		if _, err := db.AddBookmark("https://unarchived.com", "Unarchived"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		now := time.Now()
-		db.SaveArchiveResult(id1, now, &now, "ok", "", "https://archived.com", "<html></html>")
+		if err := db.SaveArchiveResult(id1, now, &now, "ok", "", "https://archived.com", "<html></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		bookmarks, err := db.ListArchivedBookmarks(0)
 		if err != nil {
@@ -92,16 +132,35 @@ func TestListArchivedBookmarks(t *testing.T) {
 
 	t.Run("respects limit", func(t *testing.T) {
 		db2 := newTestDB(t)
-		defer db2.Close()
+		t.Cleanup(func() {
+			if err := db2.Close(); err != nil {
+				t.Errorf("failed to close db2: %v", err)
+			}
+		})
 
-		id1, _ := db2.AddBookmark("https://site1.com", "Site 1")
-		id2, _ := db2.AddBookmark("https://site2.com", "Site 2")
-		id3, _ := db2.AddBookmark("https://site3.com", "Site 3")
+		id1, err := db2.AddBookmark("https://site1.com", "Site 1")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		id2, err := db2.AddBookmark("https://site2.com", "Site 2")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		id3, err := db2.AddBookmark("https://site3.com", "Site 3")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		now := time.Now()
-		db2.SaveArchiveResult(id1, now, &now, "ok", "", "", "<html>1</html>")
-		db2.SaveArchiveResult(id2, now, &now, "ok", "", "", "<html>2</html>")
-		db2.SaveArchiveResult(id3, now, &now, "ok", "", "", "<html>3</html>")
+		if err := db2.SaveArchiveResult(id1, now, &now, "ok", "", "", "<html>1</html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
+		if err := db2.SaveArchiveResult(id2, now, &now, "ok", "", "", "<html>2</html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
+		if err := db2.SaveArchiveResult(id3, now, &now, "ok", "", "", "<html>3</html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		bookmarks, err := db2.ListArchivedBookmarks(2)
 		if err != nil {
@@ -116,15 +175,31 @@ func TestListArchivedBookmarks(t *testing.T) {
 // TestListBookmarksByArchiveStatus tests filtering by archive status.
 func TestListBookmarksByArchiveStatus(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
-	id1, _ := db.AddBookmark("https://success.com", "Success")
-	id2, _ := db.AddBookmark("https://error.com", "Error")
-	db.AddBookmark("https://pending.com", "Pending")
+	id1, err := db.AddBookmark("https://success.com", "Success")
+	if err != nil {
+		t.Fatalf("failed to add bookmark: %v", err)
+	}
+	id2, err := db.AddBookmark("https://error.com", "Error")
+	if err != nil {
+		t.Fatalf("failed to add bookmark: %v", err)
+	}
+	if _, err := db.AddBookmark("https://pending.com", "Pending"); err != nil {
+		t.Fatalf("failed to add bookmark: %v", err)
+	}
 
 	now := time.Now()
-	db.SaveArchiveResult(id1, now, &now, "ok", "", "", "<html></html>")
-	db.SaveArchiveResult(id2, now, nil, "error", "connection timeout", "", "")
+	if err := db.SaveArchiveResult(id1, now, &now, "ok", "", "", "<html></html>"); err != nil {
+		t.Fatalf("failed to save archive result: %v", err)
+	}
+	if err := db.SaveArchiveResult(id2, now, nil, "error", "connection timeout", "", ""); err != nil {
+		t.Fatalf("failed to save archive result: %v", err)
+	}
 
 	t.Run("filters by ok status", func(t *testing.T) {
 		bookmarks, err := db.ListBookmarksByArchiveStatus("ok", 0)
@@ -156,14 +231,23 @@ func TestListBookmarksByArchiveStatus(t *testing.T) {
 // TestGetBookmarkArchive tests retrieving archive data.
 func TestGetBookmarkArchive(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("retrieves archive for existing bookmark", func(t *testing.T) {
-		id, _ := db.AddBookmark("https://example.com", "Example")
+		id, err := db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		now := time.Now()
 		html := "<html><body>Hello</body></html>"
-		db.SaveArchiveResult(id, now, &now, "ok", "", "https://example.com/final", html)
+		if err := db.SaveArchiveResult(id, now, &now, "ok", "", "https://example.com/final", html); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		archive, err := db.GetBookmarkArchive(id)
 		if err != nil {
@@ -184,7 +268,10 @@ func TestGetBookmarkArchive(t *testing.T) {
 	})
 
 	t.Run("returns empty fields for unarchived bookmark", func(t *testing.T) {
-		id, _ := db.AddBookmark("https://new.com", "New")
+		id, err := db.AddBookmark("https://new.com", "New")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		archive, err := db.GetBookmarkArchive(id)
 		if err != nil {
@@ -212,16 +299,23 @@ func TestGetBookmarkArchive(t *testing.T) {
 // TestSaveArchiveResult tests saving archive results.
 func TestSaveArchiveResult(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("saves successful archive", func(t *testing.T) {
-		id, _ := db.AddBookmark("https://example.com", "Example")
+		id, err := db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		attemptedAt := time.Now()
 		archivedAt := attemptedAt.Add(5 * time.Second)
 		html := "<html></html>"
 
-		err := db.SaveArchiveResult(id, attemptedAt, &archivedAt, "ok", "", "https://example.com", html)
+		err = db.SaveArchiveResult(id, attemptedAt, &archivedAt, "ok", "", "https://example.com", html)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -236,12 +330,15 @@ func TestSaveArchiveResult(t *testing.T) {
 	})
 
 	t.Run("saves failed archive", func(t *testing.T) {
-		id, _ := db.AddBookmark("https://fail.com", "Fail")
+		id, err := db.AddBookmark("https://fail.com", "Fail")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		attemptedAt := time.Now()
 		errMsg := "connection refused"
 
-		err := db.SaveArchiveResult(id, attemptedAt, nil, "error", errMsg, "", "")
+		err = db.SaveArchiveResult(id, attemptedAt, nil, "error", errMsg, "", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -272,15 +369,24 @@ func TestSaveArchiveResult(t *testing.T) {
 // TestClearBookmarkArchive tests clearing archive data.
 func TestClearBookmarkArchive(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("clears existing archive", func(t *testing.T) {
-		id, _ := db.AddBookmark("https://example.com", "Example")
+		id, err := db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		now := time.Now()
-		db.SaveArchiveResult(id, now, &now, "ok", "", "https://example.com", "<html></html>")
+		if err := db.SaveArchiveResult(id, now, &now, "ok", "", "https://example.com", "<html></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
-		err := db.ClearBookmarkArchive(id)
+		err = db.ClearBookmarkArchive(id)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -308,28 +414,43 @@ func TestClearBookmarkArchive(t *testing.T) {
 // TestQueueBookmarkForArchive tests queueing a bookmark for archive.
 func TestQueueBookmarkForArchive(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("queues archived bookmark for re-archive", func(t *testing.T) {
-		id, _ := db.AddBookmark("https://example.com", "Example")
+		id, err := db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		now := time.Now()
-		db.SaveArchiveResult(id, now, &now, "ok", "", "", "<html></html>")
+		if err := db.SaveArchiveResult(id, now, &now, "ok", "", "", "<html></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		// Verify it's archived
-		archived, _ := db.ListArchivedBookmarks(0)
+		archived, err := db.ListArchivedBookmarks(0)
+		if err != nil {
+			t.Fatalf("failed to list archived bookmarks: %v", err)
+		}
 		if len(archived) != 1 {
 			t.Fatalf("expected 1 archived bookmark, got %d", len(archived))
 		}
 
 		// Queue for re-archive
-		err := db.QueueBookmarkForArchive(id)
+		err = db.QueueBookmarkForArchive(id)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
 		// Should now appear in "to archive" list
-		toArchive, _ := db.ListBookmarksToArchive(0)
+		toArchive, err := db.ListBookmarksToArchive(0)
+		if err != nil {
+			t.Fatalf("failed to list bookmarks to archive: %v", err)
+		}
 		if len(toArchive) != 1 {
 			t.Errorf("expected 1 bookmark to archive after queue, got %d", len(toArchive))
 		}

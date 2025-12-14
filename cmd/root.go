@@ -31,7 +31,11 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			log.Fatalf("Failed to initialize database: %v", err)
 		}
-		defer database.Close()
+		defer func() {
+			if err := database.Close(); err != nil {
+				log.Printf("failed to close database: %v", err)
+			}
+		}()
 
 		numWorkers, err := cmd.Flags().GetInt("archive-workers")
 		if err != nil {

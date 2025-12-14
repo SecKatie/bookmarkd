@@ -13,7 +13,11 @@ import (
 // TestHandleIndex tests the index page handler.
 func TestHandleIndex(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("GET returns index page", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -47,7 +51,11 @@ func TestHandleIndex(t *testing.T) {
 // TestHandleBookmarklet tests the bookmarklet page handler.
 func TestHandleBookmarklet(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("GET returns bookmarklet page", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/bookmarklet", nil)
@@ -78,7 +86,11 @@ func TestHandleBookmarklet(t *testing.T) {
 // TestHandleBookmarkletAdd tests the bookmarklet add handler.
 func TestHandleBookmarkletAdd(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("GET with url and title", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/bookmarklet/add?url=https://example.com&title=Example", nil)
@@ -135,11 +147,17 @@ func TestHandleBookmarkletAdd(t *testing.T) {
 // TestHandleBookmarks tests the bookmarks list/create handler.
 func TestHandleBookmarks(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("GET returns bookmarks list", func(t *testing.T) {
 		// Add a bookmark first
-		server.db.AddBookmark("https://example.com", "Example Site")
+		if _, err := server.db.AddBookmark("https://example.com", "Example Site"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodGet, "/bookmarks", nil)
 		w := httptest.NewRecorder()
@@ -210,7 +228,11 @@ func TestHandleBookmarks(t *testing.T) {
 // TestHandleArchive tests the archive viewer handler.
 func TestHandleArchive(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("GET with invalid path returns not found", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/bookmarks/", nil)
@@ -246,7 +268,10 @@ func TestHandleArchive(t *testing.T) {
 	})
 
 	t.Run("GET archive for bookmark without archive returns not found", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://example.com", "Example")
+		id, err := server.db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodGet, "/bookmarks/"+itoa(id)+"/archive", nil)
 		w := httptest.NewRecorder()
@@ -259,9 +284,14 @@ func TestHandleArchive(t *testing.T) {
 	})
 
 	t.Run("GET archive for archived bookmark returns viewer", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://archived.com", "Archived Site")
+		id, err := server.db.AddBookmark("https://archived.com", "Archived Site")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 		now := time.Now()
-		server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://archived.com", "<html><body>Archived</body></html>")
+		if err := server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://archived.com", "<html><body>Archived</body></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodGet, "/bookmarks/"+itoa(id)+"/archive", nil)
 		w := httptest.NewRecorder()
@@ -278,10 +308,15 @@ func TestHandleArchive(t *testing.T) {
 	})
 
 	t.Run("GET raw archive returns HTML content", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://raw.com", "Raw Site")
+		id, err := server.db.AddBookmark("https://raw.com", "Raw Site")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 		now := time.Now()
 		htmlContent := "<html><body>Raw HTML Content</body></html>"
-		server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://raw.com", htmlContent)
+		if err := server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://raw.com", htmlContent); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodGet, "/bookmarks/"+itoa(id)+"/archive/raw", nil)
 		w := httptest.NewRecorder()
@@ -311,7 +346,11 @@ func TestHandleArchive(t *testing.T) {
 // TestHandleArchiveManager tests the archive manager page handler.
 func TestHandleArchiveManager(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("GET returns archive manager page", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/archives", nil)
@@ -342,10 +381,16 @@ func TestHandleArchiveManager(t *testing.T) {
 // TestHandleArchivesList tests the archives list fragment handler.
 func TestHandleArchivesList(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("GET returns archives list", func(t *testing.T) {
-		server.db.AddBookmark("https://example.com", "Example")
+		if _, err := server.db.AddBookmark("https://example.com", "Example"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodGet, "/archives/list", nil)
 		w := httptest.NewRecorder()
@@ -376,7 +421,11 @@ func TestHandleArchivesList(t *testing.T) {
 // TestHandleArchivesRoutes tests the archives routing handler.
 func TestHandleArchivesRoutes(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("routes to list handler", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/archives/list", nil)
@@ -390,7 +439,10 @@ func TestHandleArchivesRoutes(t *testing.T) {
 	})
 
 	t.Run("routes to status handler", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://example.com", "Example")
+		id, err := server.db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodGet, "/archives/"+itoa(id)+"/status", nil)
 		w := httptest.NewRecorder()
@@ -414,7 +466,10 @@ func TestHandleArchivesRoutes(t *testing.T) {
 	})
 
 	t.Run("refetch requires POST", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://example.com", "Example")
+		id, err := server.db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodGet, "/archives/"+itoa(id)+"/refetch", nil)
 		w := httptest.NewRecorder()
@@ -452,12 +507,21 @@ func TestHandleArchivesRoutes(t *testing.T) {
 // TestRefetchArchive tests the refetch archive handler.
 func TestRefetchArchive(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("POST clears archive and redirects", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://example.com", "Example")
+		id, err := server.db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 		now := time.Now()
-		server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://example.com", "<html></html>")
+		if err := server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://example.com", "<html></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodPost, "/archives/"+itoa(id)+"/refetch", nil)
 		w := httptest.NewRecorder()
@@ -476,9 +540,14 @@ func TestRefetchArchive(t *testing.T) {
 	})
 
 	t.Run("POST with HX-Request returns item fragment", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://htmx.com", "HTMX")
+		id, err := server.db.AddBookmark("https://htmx.com", "HTMX")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 		now := time.Now()
-		server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://htmx.com", "<html></html>")
+		if err := server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://htmx.com", "<html></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
 
 		req := httptest.NewRequest(http.MethodPost, "/archives/"+itoa(id)+"/refetch", nil)
 		req.Header.Set("HX-Request", "true")
@@ -510,11 +579,21 @@ func TestRefetchArchive(t *testing.T) {
 // TestBuildArchiveManagerView tests the view builder function.
 func TestBuildArchiveManagerView(t *testing.T) {
 	server := newTestServer(t)
-	defer server.db.Close()
+	t.Cleanup(func() {
+		if err := server.db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("builds view for unarchived bookmark", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://example.com", "Example")
-		bookmark, _ := server.db.GetBookmark(id)
+		id, err := server.db.AddBookmark("https://example.com", "Example")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		bookmark, err := server.db.GetBookmark(id)
+		if err != nil {
+			t.Fatalf("failed to get bookmark: %v", err)
+		}
 
 		view := server.buildArchiveManagerView(bookmark)
 
@@ -533,10 +612,18 @@ func TestBuildArchiveManagerView(t *testing.T) {
 	})
 
 	t.Run("builds view for archived bookmark", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://archived.com", "Archived")
+		id, err := server.db.AddBookmark("https://archived.com", "Archived")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 		now := time.Now()
-		server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://archived.com", "<html></html>")
-		bookmark, _ := server.db.GetBookmark(id)
+		if err := server.db.SaveArchiveResult(id, now, &now, "ok", "", "https://archived.com", "<html></html>"); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
+		bookmark, err := server.db.GetBookmark(id)
+		if err != nil {
+			t.Fatalf("failed to get bookmark: %v", err)
+		}
 
 		view := server.buildArchiveManagerView(bookmark)
 
@@ -549,10 +636,18 @@ func TestBuildArchiveManagerView(t *testing.T) {
 	})
 
 	t.Run("builds view for failed archive", func(t *testing.T) {
-		id, _ := server.db.AddBookmark("https://failed.com", "Failed")
+		id, err := server.db.AddBookmark("https://failed.com", "Failed")
+		if err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 		now := time.Now()
-		server.db.SaveArchiveResult(id, now, nil, "error", "connection timeout", "", "")
-		bookmark, _ := server.db.GetBookmark(id)
+		if err := server.db.SaveArchiveResult(id, now, nil, "error", "connection timeout", "", ""); err != nil {
+			t.Fatalf("failed to save archive result: %v", err)
+		}
+		bookmark, err := server.db.GetBookmark(id)
+		if err != nil {
+			t.Fatalf("failed to get bookmark: %v", err)
+		}
 
 		view := server.buildArchiveManagerView(bookmark)
 

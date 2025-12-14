@@ -91,7 +91,9 @@ func (db *DB) Migrate() error {
 		}
 
 		if _, err := tx.Exec(string(content)); err != nil {
-			tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Printf("failed to rollback transaction: %v", rbErr)
+			}
 			return fmt.Errorf("failed to apply migration %s: %w", version, err)
 		}
 
@@ -99,7 +101,9 @@ func (db *DB) Migrate() error {
 		if _, err := tx.Exec(`
 		    INSERT INTO schema_migrations (version) VALUES (?)
 		`, version); err != nil {
-			tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Printf("failed to rollback transaction: %v", rbErr)
+			}
 			return fmt.Errorf("failed to mark migration as applied: %w", err)
 		}
 

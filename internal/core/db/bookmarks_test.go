@@ -9,7 +9,11 @@ import (
 // TestAddBookmark tests bookmark creation.
 func TestAddBookmark(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("creates bookmark successfully", func(t *testing.T) {
 		id, err := db.AddBookmark("https://example.com", "Example Site")
@@ -34,7 +38,11 @@ func TestAddBookmark(t *testing.T) {
 // TestGetBookmark tests retrieving a single bookmark.
 func TestGetBookmark(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("retrieves existing bookmark", func(t *testing.T) {
 		id, _ := db.AddBookmark("https://example.com", "Example Site")
@@ -71,7 +79,11 @@ func TestGetBookmark(t *testing.T) {
 // TestListBookmarks tests listing bookmarks.
 func TestListBookmarks(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("returns empty list when no bookmarks", func(t *testing.T) {
 		bookmarks, err := db.ListBookmarks(0)
@@ -84,9 +96,15 @@ func TestListBookmarks(t *testing.T) {
 	})
 
 	t.Run("returns all bookmarks", func(t *testing.T) {
-		db.AddBookmark("https://site1.com", "Site 1")
-		db.AddBookmark("https://site2.com", "Site 2")
-		db.AddBookmark("https://site3.com", "Site 3")
+		if _, err := db.AddBookmark("https://site1.com", "Site 1"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		if _, err := db.AddBookmark("https://site2.com", "Site 2"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
+		if _, err := db.AddBookmark("https://site3.com", "Site 3"); err != nil {
+			t.Fatalf("failed to add bookmark: %v", err)
+		}
 
 		bookmarks, err := db.ListBookmarks(0)
 		if err != nil {
@@ -111,7 +129,11 @@ func TestListBookmarks(t *testing.T) {
 	t.Run("orders by created_at DESC", func(t *testing.T) {
 		// Create fresh database for this test
 		db2 := newTestDB(t)
-		defer db2.Close()
+		t.Cleanup(func() {
+			if err := db2.Close(); err != nil {
+				t.Errorf("failed to close db2: %v", err)
+			}
+		})
 
 		// Insert bookmarks with explicit different timestamps to ensure ordering
 		_, err := db2.db.Exec("INSERT INTO bookmarks (url, title, created_at) VALUES (?, ?, ?)",
@@ -148,7 +170,11 @@ func TestListBookmarks(t *testing.T) {
 // TestUpdateBookmark tests updating a bookmark.
 func TestUpdateBookmark(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("updates existing bookmark", func(t *testing.T) {
 		id, _ := db.AddBookmark("https://old.com", "Old Title")
@@ -181,7 +207,11 @@ func TestUpdateBookmark(t *testing.T) {
 // TestDeleteBookmark tests deleting a bookmark.
 func TestDeleteBookmark(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("deletes existing bookmark", func(t *testing.T) {
 		id, _ := db.AddBookmark("https://example.com", "To Delete")
@@ -255,7 +285,11 @@ func TestValidateBookmarkURL(t *testing.T) {
 // TestAddBookmarkValidation tests that AddBookmark validates URLs.
 func TestAddBookmarkValidation(t *testing.T) {
 	db := newTestDB(t)
-	defer db.Close()
+	t.Cleanup(func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	})
 
 	t.Run("rejects invalid URL", func(t *testing.T) {
 		_, err := db.AddBookmark("not-a-url", "Invalid")

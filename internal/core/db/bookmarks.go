@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"time"
 )
@@ -104,7 +105,11 @@ func (db *DB) ListBookmarks(limit int) ([]Bookmark, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list bookmarks: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed to close rows: %v", err)
+		}
+	}()
 
 	var out []Bookmark
 	for rows.Next() {

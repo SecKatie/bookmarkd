@@ -46,7 +46,11 @@ func runArchive(cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close database: %v", err)
+		}
+	}()
 
 	id, err := cmd.Flags().GetInt64("id")
 	if err != nil {

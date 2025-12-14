@@ -15,14 +15,7 @@ var templatesFS embed.FS
 
 type Server struct {
 	db                 *db.DB
-	indexHTML          []byte
-	bookmarksTmpl      *template.Template
-	viewerTmpl         *template.Template
-	archivesHTML       []byte
-	archivesListTmpl   *template.Template
-	archiveItemTmpl    *template.Template
-	bookmarkletHTML    []byte
-	bookmarkletAddTmpl *template.Template
+	templates          *template.Template
 	staticFS           http.FileSystem
 }
 
@@ -42,42 +35,7 @@ func StartServer(addr string, database *db.DB) {
 }
 
 func newServer(database *db.DB) (*Server, error) {
-	indexHTML, err := templatesFS.ReadFile("templates/index.html")
-	if err != nil {
-		return nil, err
-	}
-
-	bookmarksTmpl, err := template.ParseFS(templatesFS, "templates/bookmarks.html")
-	if err != nil {
-		return nil, err
-	}
-
-	viewerTmpl, err := template.ParseFS(templatesFS, "templates/viewer.html")
-	if err != nil {
-		return nil, err
-	}
-
-	archivesHTML, err := templatesFS.ReadFile("templates/archives.html")
-	if err != nil {
-		return nil, err
-	}
-
-	archivesListTmpl, err := template.ParseFS(templatesFS, "templates/archives_list.html")
-	if err != nil {
-		return nil, err
-	}
-
-	archiveItemTmpl, err := template.ParseFS(templatesFS, "templates/archive_item.html")
-	if err != nil {
-		return nil, err
-	}
-
-	bookmarkletHTML, err := templatesFS.ReadFile("templates/bookmarklet.html")
-	if err != nil {
-		return nil, err
-	}
-
-	bookmarkletAddTmpl, err := template.ParseFS(templatesFS, "templates/bookmarklet_add.html")
+	templates, err := template.ParseFS(templatesFS, "templates/*.html")
 	if err != nil {
 		return nil, err
 	}
@@ -88,16 +46,9 @@ func newServer(database *db.DB) (*Server, error) {
 	}
 
 	return &Server{
-		db:                 database,
-		indexHTML:          indexHTML,
-		bookmarksTmpl:      bookmarksTmpl,
-		viewerTmpl:         viewerTmpl,
-		archivesHTML:       archivesHTML,
-		archivesListTmpl:   archivesListTmpl,
-		archiveItemTmpl:    archiveItemTmpl,
-		bookmarkletHTML:    bookmarkletHTML,
-		bookmarkletAddTmpl: bookmarkletAddTmpl,
-		staticFS:           http.FS(staticSub),
+		db:        database,
+		templates: templates,
+		staticFS:  http.FS(staticSub),
 	}, nil
 }
 

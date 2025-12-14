@@ -140,11 +140,7 @@
         <h1>bookmarkd</h1>
         <p>Bookmarklet</p>
       </div>
-      <div class="nav-links">
-        <a class="nav-link" href="/">Bookmarks</a>
-        <a class="nav-link" href="/archives">Archives</a>
-        <a class="nav-link active" href="/bookmarklet">Bookmarklet</a>
-      </div>
+      {{ template "nav" . }}
     </header>
 
     <main class="card">
@@ -165,7 +161,7 @@
           </div>
 
           <div class="note">
-            <div><b>Safari:</b> if you see a popup blocked warning, allow popups for the site you’re bookmarking, then try again.</div>
+            <div><b>Safari:</b> if you see a popup blocked warning, allow popups for the site you're bookmarking, then try again.</div>
           </div>
 
           <div class="note">
@@ -177,6 +173,8 @@
         </div>
       </div>
     </main>
+
+    {{ template "footer" . }}
   </div>
 </body>
 </html>

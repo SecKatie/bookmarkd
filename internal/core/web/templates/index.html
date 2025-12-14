@@ -291,16 +291,7 @@
                 <h1>bookmarkd</h1>
                 <p>A fast bookmark manager demo using HTMX + Go</p>
             </div>
-            <div class="nav-links">
-                <a class="nav-link active" href="/">Bookmarks</a>
-                <a class="nav-link" href="/archives">Archives</a>
-                <a class="nav-link" href="/bookmarklet">Bookmarklet</a>
-                <span class="pill">
-                    <span>Listening on</span>
-                    <span class="mono">/</span>
-                    <span class="mono">bookmarks</span>
-                </span>
-            </div>
+            {{ template "nav" . }}
         </header>
 
         <main>
@@ -365,10 +356,7 @@
             </section>
         </main>
 
-        <footer>
-            <div>Built with <a href="https://htmx.org" target="_blank" rel="noopener">htmx</a> and Go | <a href="/archives">Archive Manager</a> | <a href="/bookmarklet">Bookmarklet</a></div>
-            <div class="mono">HTMX swaps: <span title="On submit we refresh the list">list fragment</span></div>
-        </footer>
+        {{ template "footer" . }}
     </div>
 </body>
 </html>

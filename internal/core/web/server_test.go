@@ -44,46 +44,36 @@ func TestNewServer(t *testing.T) {
 		if server.db == nil {
 			t.Error("expected db to be set")
 		}
-		if server.indexHTML == nil {
-			t.Error("expected indexHTML to be loaded")
+		if server.templates == nil {
+			t.Error("expected templates to be loaded")
 		}
-		if server.bookmarksTmpl == nil {
-			t.Error("expected bookmarksTmpl to be loaded")
-		}
-		if server.viewerTmpl == nil {
-			t.Error("expected viewerTmpl to be loaded")
-		}
-		if server.archivesHTML == nil {
-			t.Error("expected archivesHTML to be loaded")
-		}
-		if server.archivesListTmpl == nil {
-			t.Error("expected archivesListTmpl to be loaded")
-		}
-		if server.archiveItemTmpl == nil {
-			t.Error("expected archiveItemTmpl to be loaded")
-		}
-		if server.bookmarkletHTML == nil {
-			t.Error("expected bookmarkletHTML to be loaded")
-		}
-		if server.bookmarkletAddTmpl == nil {
-			t.Error("expected bookmarkletAddTmpl to be loaded")
+		if server.staticFS == nil {
+			t.Error("expected staticFS to be set")
 		}
 	})
 
-	t.Run("loads templates with content", func(t *testing.T) {
+	t.Run("loads all required templates", func(t *testing.T) {
 		database := newTestDB(t)
 		defer database.Close()
 
 		server, _ := newServer(database)
 
-		if len(server.indexHTML) == 0 {
-			t.Error("expected indexHTML to have content")
+		requiredTemplates := []string{
+			"index.html",
+			"bookmarks.html",
+			"viewer.html",
+			"archives.html",
+			"archives_list.html",
+			"archive_item.html",
+			"bookmarklet.html",
+			"bookmarklet_add.html",
+			"nav.html",
 		}
-		if len(server.archivesHTML) == 0 {
-			t.Error("expected archivesHTML to have content")
-		}
-		if len(server.bookmarkletHTML) == 0 {
-			t.Error("expected bookmarkletHTML to have content")
+
+		for _, name := range requiredTemplates {
+			if server.templates.Lookup(name) == nil {
+				t.Errorf("expected template %q to be loaded", name)
+			}
 		}
 	})
 }

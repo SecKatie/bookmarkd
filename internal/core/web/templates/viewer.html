@@ -118,11 +118,7 @@
                 Original: <a href="{{ .URL }}" target="_blank" rel="noopener">{{ .URL }}</a>
             </div>
         </div>
-        <div class="nav-links">
-            <a class="nav-link" href="/">Bookmarks</a>
-            <a class="nav-link" href="/archives">Archives</a>
-            <a class="nav-link" href="/bookmarklet">Bookmarklet</a>
-        </div>
+        {{ template "nav" . }}
     </nav>
     <iframe class="viewer-frame" src="{{ .RawURL }}" sandbox="allow-same-origin allow-scripts"></iframe>
 </body>

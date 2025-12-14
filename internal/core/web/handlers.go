@@ -16,8 +16,10 @@ func (ws *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := w.Write(ws.indexHTML); err != nil {
-		log.Printf("Failed to write index template: %v", err)
+	data := map[string]any{"ActivePage": "bookmarks"}
+	if err := ws.templates.ExecuteTemplate(w, "index.html", data); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Failed to execute index template: %v", err)
 	}
 }
 
@@ -27,8 +29,10 @@ func (ws *Server) handleBookmarklet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := w.Write(ws.bookmarkletHTML); err != nil {
-		log.Printf("Failed to write bookmarklet template: %v", err)
+	data := map[string]any{"ActivePage": "bookmarklet"}
+	if err := ws.templates.ExecuteTemplate(w, "bookmarklet.html", data); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Failed to execute bookmarklet template: %v", err)
 	}
 }
 
@@ -51,7 +55,7 @@ func (ws *Server) handleBookmarkletAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := ws.bookmarkletAddTmpl.Execute(w, map[string]string{
+	if err := ws.templates.ExecuteTemplate(w, "bookmarklet_add.html", map[string]string{
 		"URL":   url,
 		"Title": title,
 	}); err != nil {
@@ -120,7 +124,7 @@ func (ws *Server) listBookmarks(w http.ResponseWriter, _ *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := ws.bookmarksTmpl.Execute(w, map[string]any{"bookmarks": bookmarksData}); err != nil {
+	if err := ws.templates.ExecuteTemplate(w, "bookmarks.html", map[string]any{"bookmarks": bookmarksData}); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Failed to execute template: %v", err)
 		return
@@ -171,15 +175,16 @@ func (ws *Server) viewArchive(w http.ResponseWriter, _ *http.Request, id int64) 
 		return
 	}
 
-	view := archiveView{
-		ID:     bookmark.ID,
-		URL:    bookmark.URL,
-		Title:  bookmark.Title,
-		RawURL: fmt.Sprintf("/bookmarks/%d/archive/raw", id),
+	view := map[string]any{
+		"ID":         bookmark.ID,
+		"URL":        bookmark.URL,
+		"Title":      bookmark.Title,
+		"RawURL":     fmt.Sprintf("/bookmarks/%d/archive/raw", id),
+		"ActivePage": "archives",
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := ws.viewerTmpl.Execute(w, view); err != nil {
+	if err := ws.templates.ExecuteTemplate(w, "viewer.html", view); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Failed to execute viewer template: %v", err)
 		return
@@ -212,8 +217,10 @@ func (ws *Server) handleArchiveManager(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if _, err := w.Write(ws.archivesHTML); err != nil {
-		log.Printf("Failed to write archives template: %v", err)
+	data := map[string]any{"ActivePage": "archives"}
+	if err := ws.templates.ExecuteTemplate(w, "archives.html", data); err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		log.Printf("Failed to execute archives template: %v", err)
 	}
 }
 
@@ -260,7 +267,7 @@ func (ws *Server) handleArchivesList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := ws.archivesListTmpl.Execute(w, map[string]any{"archives": archivesData}); err != nil {
+	if err := ws.templates.ExecuteTemplate(w, "archives_list.html", map[string]any{"archives": archivesData}); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Failed to execute archives list template: %v", err)
 		return
@@ -319,7 +326,7 @@ func (ws *Server) getArchiveItemStatus(w http.ResponseWriter, r *http.Request, i
 	view := ws.buildArchiveManagerView(bookmark)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := ws.archiveItemTmpl.Execute(w, view); err != nil {
+	if err := ws.templates.ExecuteTemplate(w, "archive_item.html", view); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		log.Printf("Failed to execute archive item template: %v", err)
 		return
@@ -353,7 +360,7 @@ func (ws *Server) refetchArchive(w http.ResponseWriter, r *http.Request, id int6
 		view.ArchiveError = ""
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if err := ws.archiveItemTmpl.Execute(w, view); err != nil {
+		if err := ws.templates.ExecuteTemplate(w, "archive_item.html", view); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			log.Printf("Failed to execute archive item template: %v", err)
 			return

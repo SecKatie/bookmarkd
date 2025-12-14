@@ -263,11 +263,7 @@
                 <h1>bookmarkd</h1>
                 <p>Archive manager</p>
             </div>
-            <div class="nav-links">
-                <a class="nav-link" href="/">Bookmarks</a>
-                <a class="nav-link active" href="/archives">Archives</a>
-                <a class="nav-link" href="/bookmarklet">Bookmarklet</a>
-            </div>
+            {{ template "nav" . }}
         </header>
 
         <main>
@@ -301,10 +297,7 @@
             </section>
         </main>
 
-        <footer>
-            <div>Built with <a href="https://htmx.org" target="_blank" rel="noopener">htmx</a> and Go | <a href="/archives">Archive Manager</a> | <a href="/bookmarklet">Bookmarklet</a></div>
-            <div class="mono">HTMX swaps: <span title="Refreshes list fragment">list fragment</span></div>
-        </footer>
+        {{ template "footer" . }}
     </div>
 </body>
 </html>

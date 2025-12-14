@@ -1,0 +1,14 @@
+{{/* nav.html: shared navigation partial */}}
+{{ define "nav" }}
+<nav class="nav-links">
+    <a class="nav-link{{ if eq .ActivePage "bookmarks" }} active{{ end }}" href="/">Bookmarks</a>
+    <a class="nav-link{{ if eq .ActivePage "archives" }} active{{ end }}" href="/archives">Archives</a>
+    <a class="nav-link{{ if eq .ActivePage "bookmarklet" }} active{{ end }}" href="/bookmarklet">Bookmarklet</a>
+</nav>
+{{ end }}
+
+{{ define "footer" }}
+<footer>
+    <div>Built with <a href="https://htmx.org" target="_blank" rel="noopener">htmx</a> and Go</div>
+</footer>
+{{ end }}
